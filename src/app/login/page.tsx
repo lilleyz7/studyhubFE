@@ -6,44 +6,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import Login from "../actions/loginAction";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const url = "/api/login"
-    const method = "POST"
-
-    const options = {
-      method: method,
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        "email": email,
-        "password": password
-      })
+    const res = await Login(email, password);
+    if (res.error){
+      setError(res.error);
     }
-
-    try{
-      const response = await fetch(url, options);
-      if(!response.ok){
-        console.log("Failed to fetch");
-        console.log(response.statusText)
-      } else{
-        router.push("/")
-      }
-    } catch(e){
-      console.log(e);
-    }
-
+    router.push("/studyRoom/create-room");
   };
 
-  return (
+  return ( 
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+      <p>{error}</p>
       <Card className="w-full max-w-md shadow-lg border border-gray-200">
         <form onSubmit={handleSubmit}>
           <CardHeader>

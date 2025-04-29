@@ -4,7 +4,6 @@ export async function POST(req: Request){
     const { email, password } = await req.json();
     const url = process.env.API_BASE_URL
     const loginEndPoint = url + '/login'
-    console.log(loginEndPoint);
 
     const options = {
         method: "post",
@@ -24,10 +23,8 @@ export async function POST(req: Request){
         }
         const responseAsJson = await response.json();
         const cookieStore = await cookies()
-        console.log(responseAsJson);
-        console.log(responseAsJson.accessToken)
-        cookieStore.set("accessToken", responseAsJson.accessToken, {httpOnly: true, expires: responseAsJson.expiresIn})
-        cookieStore.set("refreshToken", responseAsJson.refreshToken, {httpOnly: true, expires: responseAsJson.expiresIn * 3})
+        cookieStore.set("accessToken", responseAsJson.accessToken, {expires: 36000})
+        cookieStore.set("refreshToken", responseAsJson.refreshToken, {expires: 100000})
 
 
         return new Response(JSON.stringify({status: 200}))

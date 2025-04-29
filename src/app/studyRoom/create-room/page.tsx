@@ -1,54 +1,25 @@
 "use client"
 
+import CreateRoom from "@/app/actions/createRoomAction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckAuth } from "@/utils/CheckAuth";
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useState } from "react";
 
 export default function CreateRoomPage(){
     const [roomName, setRoomName] = useState("");
     const routeController  = useRouter();
 
-    useEffect(() => {
-        async function isAuthenticated(){
-          const authorized = await CheckAuth();
-          if(!authorized){
-            routeController.push("/login")
-          }
-        }
-
-        isAuthenticated();
-    }, [routeController])
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const url = "/api/login"
-        const method = "POST"
-    
-        const options = {
-          method: method,
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            "roomName": roomName,
-          })
+        const res = await CreateRoom(roomName);
+        if (res.error){
+          alert(res.error);
         }
-    
-        try{
-          const response = await fetch(url, options);
-          if(!response.ok){
-            console.log("Failed to fetch");
-            console.log(response.statusText)
-          } else{
-            routeController.push("/")
-          }
-        } catch(e){
-          console.log(e);
-        }
+
+        routeController.push("/");
     }
 
     return(
@@ -69,7 +40,7 @@ export default function CreateRoomPage(){
                 onChange={(e) => setRoomName(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full">Sign In</Button>
+            <Button type="submit" className="w-full">Create</Button>
           </CardContent>
           {/* <CardFooter className="text-sm text-muted-foreground justify-center">
             Don&apos;t have an account? <a href="/login" className="ml-1 underline">Sign up</a>

@@ -1,11 +1,12 @@
-import GetAccessToken from "@/utils/GetAccessToken";
+import { NextRequest } from "next/server";
 
-export async function POST(req: Request){
+export async function POST(req: NextRequest){
     const {roomName} = await req.json();
-    const token = GetAccessToken;
+    const accessToken = req.cookies.get("accessToken");
+    console.log(accessToken?.value);
 
-    if (!token){
-        return new Response(JSON.stringify({"error": "unauthorized", "status": 400}))
+    if (!accessToken){
+        return new Response(JSON.stringify({ "error": "no token" }), { status: 401 });
     }
 
     const url = process.env.API_BASE_URL
@@ -17,7 +18,7 @@ export async function POST(req: Request){
         method: "post",
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${accessToken.value}`
         },
         body: JSON.stringify({"roomName": roomName})
     }
