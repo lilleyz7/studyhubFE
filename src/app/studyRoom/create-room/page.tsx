@@ -1,16 +1,27 @@
 "use client"
 
+import CheckAuth from "@/app/actions/checkAuth";
 import CreateRoom from "@/app/actions/createRoomAction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function CreateRoomPage(){
     const [roomName, setRoomName] = useState("");
     const routeController  = useRouter();
+
+    useEffect(() => {
+      async function checkAuth(){
+        const isAuthenticated = CheckAuth();
+        if(!isAuthenticated){
+          routeController.push("/login")
+        }
+      }
+      checkAuth()
+    }, [routeController])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
