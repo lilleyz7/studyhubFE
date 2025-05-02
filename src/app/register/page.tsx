@@ -6,11 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import Register from "../actions/registerAction";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -20,31 +22,12 @@ export default function RegisterPage() {
         console.log(password + "does not equal" + passwordConfirm)
         alert("Passwords do not match");
     } else{
-      const url = "/api/register"
-      const method = "POST"
-  
-      const options = {
-        method: method,
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          "email": email,
-          "password": password
-        })
+      const isSuccessful = await Register(email, password)
+      if (isSuccessful.error){
+        setError(isSuccessful.error)
       }
-  
-      try{
-        const response = await fetch(url, options);
-        if(!response.ok){
-          console.log("Failed to fetch");
-          console.log(response.statusText)
-        } else{
-          router.push("/login")
-        }
-      } catch(e){
-        console.log(e);
-      }
+
+      router.push("/studyRoom/join-room")
     }
 
   };
@@ -54,7 +37,7 @@ export default function RegisterPage() {
       <Card className="w-full max-w-md shadow-lg border border-gray-200">
         <form onSubmit={handleSubmit}>
           <CardHeader>
-            <CardTitle className="text-2xl text-center">Login to your account</CardTitle>
+            <CardTitle className="text-2xl text-center">Register</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -91,13 +74,16 @@ export default function RegisterPage() {
                 onChange={(e) => setPasswordConfirm(e.target.value)}
               />
             </div>
-            <Button type="submit" className="w-full">Sign In</Button>
+            <Button type="submit" className="w-full">Register</Button>
           </CardContent>
           <CardFooter className="text-sm text-muted-foreground justify-center">
-            Don&apos;t have an account? <a href="/login" className="ml-1 underline">Sign up</a>
+            Already have an account? <a href="/login" className="ml-1 underline">Login</a>
           </CardFooter>
         </form>
       </Card>
+      <div>
+        {error}
+      </div>
     </div>
   );
 }

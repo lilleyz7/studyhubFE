@@ -1,53 +1,114 @@
+"use client"
+
 import CheckAuth from "@/app/actions/checkAuth";
 import { Message } from "@/app/types/ChatMessage";
-import { StudyRoomService } from "@/app/types/StudyRoomService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 
 export default function JoinRoomPage(){
     const [roomName, setRoomName] = useState("");
     const [hasEnteredRoom, setHasEnteredRoom] = useState(false);
+    // const [isMounted, setIsMounted] = useState(false);
     const [userName, setUsername] = useState("");
     const [inputContent, setInputContent] = useState("");
     const [messages, setMessages] = useState<Message[]>([]); 
-    const [studyRoomService, setStudyRoomService] = useState<StudyRoomService | null>(null);
+    const studyHubConnection  = useRef<HubConnection | null>(null);
     const router = useRouter();
 
     useEffect(() => {
-        async function checkLoginState(){
-            const authenticationState = await CheckAuth();
-            if(!authenticationState){
-                router.push("/login");
-            }
-        } 
+      
+        async function checkLoginState() {
+          const authenticated = await CheckAuth();
+          if (!authenticated) {
+            router.push("/login");
+          }
+        }
+      
         checkLoginState();
-    },[router])
+      
+        return () => {
+          if (studyHubConnection.current) {
+            studyHubConnection.current.stop().then(() => {
+              console.log("SignalR connection stopped.");
+            });
+          }
+        };
+      }, [roomName, router, userName]);
 
-    // useEffect(() => {
+      async function createConnection() {
+        console.log(userName)
+        console.log(roomName)
 
-    // }, [messages])
-
-    studyRoomService?.signalrHubConnection?.on("ReceiveMessage", (userName, message) => {
+      const url = "http://localhost:5233";
+      if(!url){
+        throw new Error("Url does not exist here");
+      }
+      console.log(url)
+      const hubConnection = new HubConnectionBuilder()
+        .withUrl(`${url}/chat`)
+        .withAutomaticReconnect()
+        .build();
+  
+      hubConnection.on("ReceiveMessage", (userName, message) => {
+          console.log("Message")
         const incomingMessage: Message = {
+          userIdentifier: userName,
+          content: message,
+        };
+        setMessages(currentMessages => [...currentMessages, incomingMessage]);
+      });
+  
+      try {
+        await hubConnection.start();
+        studyHubConnection.current = hubConnection;
+
+      } catch (err) {
+        console.error("Connection failed:", err);
+      }
+    }
+
+      studyHubConnection.current?.on("UserJoined", (userName, message) => {
+        const userJoinedMessage: Message = {
             userIdentifier: userName,
             content: message
         }
-        setMessages(currentMessage => [...currentMessage, incomingMessage]);
-    })
 
-    const handleRoomJoin = () => {
-        setStudyRoomService(new StudyRoomService());
+        setMessages(current => [...current, userJoinedMessage]);
+      })
+
+      studyHubConnection.current?.on("ErrorMessage", (userName, message) => {
+        const userJoinedMessage: Message = {
+            userIdentifier: userName,
+            content: message
+        }
+
+        setMessages(current => [...current, userJoinedMessage]);
+      })
+
+
+    const handleRoomJoin = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        await createConnection();
+        studyHubConnection.current?.invoke("JoinRoomAsync", userName, roomName).catch(function (err){
+            console.log(err.toString());
+        })
         setHasEnteredRoom(true);
+        // setIsMounted(true)
     }
 
-    const handleMessageSend = async () => {
-        await studyRoomService?.signalrHubConnection?.invoke("SendMessageAsync", roomName, userName, inputContent).catch(function (err) {
+    const handleMessageSend = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        await studyHubConnection.current?.invoke("SendMessageAsync", roomName, userName, inputContent).catch(function (err) {
+            setInputContent("");
             return console.error(err.toString());
         });
+        setInputContent("");
     }
 
     if(!hasEnteredRoom){
@@ -74,8 +135,8 @@ export default function JoinRoomPage(){
               <Input
                 id="roomName"
                 type="text"
-                placeholder="Room Name"
-                value={roomName}
+                placeholder="Username"
+                value={userName}
                 onChange={(e) => setUsername(e.target.value)}
               />
             </div>
@@ -110,8 +171,8 @@ export default function JoinRoomPage(){
         </form>
       </Card>
       <div>
-            {messages.map(message => (
-                <p key={message.userIdentifier}>{message.content}</p>
+            {messages.map((message, index) => (
+                <p key={index}>{message.content}</p>
             ))}
         </div>
     </div>
