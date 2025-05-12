@@ -58,8 +58,23 @@ export default function JoinRoomPage(){
               content: message,
             };
             setMessages(currentMessages => [...currentMessages, incomingMessage]);
+        
           });
-      
+
+          hubConnection.on("ReceiveBulkMessages", (messages: string[]) => {
+          const messagesReceived: Message[] = [];
+
+          messages.forEach(message => {
+            const incomingMessage: Message = {
+              userIdentifier: "OpenAi",
+              content: message,
+            };
+            messagesReceived.push(incomingMessage);
+          });
+          
+          setMessages(currentMessages => [...currentMessages, ...messagesReceived]);
+        });
+
           try {
             await hubConnection.start();
             studyHubConnection.current = hubConnection;
