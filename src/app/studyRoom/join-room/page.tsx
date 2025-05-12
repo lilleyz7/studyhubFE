@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import checkForAI from "@/lib/checkForAiMessage";
 import { HubConnection, HubConnectionBuilder } from "@microsoft/signalr";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -41,35 +42,38 @@ export default function JoinRoomPage(){
       }, [roomName, router, userName]);
 
       async function createConnection() {
-        console.log(userName)
-        console.log(roomName)
+          const url = "http://localhost:5233";
+          if(!url){
+            throw new Error("Url does not exist here");
+          }
+          const hubConnection = new HubConnectionBuilder()
+            .withUrl(`${url}/chat`)
+            .withAutomaticReconnect()
+            .build();
+      
+          hubConnection.on("ReceiveMessage", (userName, message) => {
+              console.log("Message")
+            const incomingMessage: Message = {
+              userIdentifier: userName,
+              content: message,
+            };
+            setMessages(currentMessages => [...currentMessages, incomingMessage]);
+          });
+      
+          try {
+            await hubConnection.start();
+            studyHubConnection.current = hubConnection;
+            await getPreviousAiMessages();
 
-      const url = "http://localhost:5233";
-      if(!url){
-        throw new Error("Url does not exist here");
-      }
-      console.log(url)
-      const hubConnection = new HubConnectionBuilder()
-        .withUrl(`${url}/chat`)
-        .withAutomaticReconnect()
-        .build();
-  
-      hubConnection.on("ReceiveMessage", (userName, message) => {
-          console.log("Message")
-        const incomingMessage: Message = {
-          userIdentifier: userName,
-          content: message,
-        };
-        setMessages(currentMessages => [...currentMessages, incomingMessage]);
+          } catch (err) {
+            console.error("Connection failed:", err);
+          }
+    }
+
+    async function getPreviousAiMessages(){
+      studyHubConnection.current?.invoke("GetAiMessagesAsync", roomName).catch((err) => {
+      console.error(err.toString());
       });
-  
-      try {
-        await hubConnection.start();
-        studyHubConnection.current = hubConnection;
-
-      } catch (err) {
-        console.error("Connection failed:", err);
-      }
     }
 
       studyHubConnection.current?.on("UserJoined", (userName, message) => {
@@ -104,10 +108,19 @@ export default function JoinRoomPage(){
     const handleMessageSend = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
+        const isAiMessage = checkForAI(inputContent)
+
+        if(isAiMessage){
+          await studyHubConnection.current?.invoke("SendAiRequestAsync", roomName, userName, inputContent).catch(function (err) {
+            setInputContent("");
+            return console.error(err.toString());
+        })
+        }
+        else{
         await studyHubConnection.current?.invoke("SendMessageAsync", roomName, userName, inputContent).catch(function (err) {
             setInputContent("");
             return console.error(err.toString());
-        });
+        })}
         setInputContent("");
     }
 
