@@ -63,7 +63,7 @@ export default function JoinRoomPage(){
         
           });
 
-          hubConnection.on("ReceiveBulkMessages", (messages: string[]) => {
+          hubConnection.on("ReceiveBulkAiMessages", (messages: string[]) => {
           const messagesReceived: Message[] = [];
 
           messages.forEach(message => {
@@ -80,25 +80,24 @@ export default function JoinRoomPage(){
           try {
             await hubConnection.start();
             studyHubConnection.current = hubConnection;
-            await getPreviousAiMessages();
+            // await getPreviousAiMessages();
 
           } catch (err) {
             console.error("Connection failed:", err);
           }
     }
 
-    async function getPreviousAiMessages(){
-      studyHubConnection.current?.invoke("GetAiMessagesAsync", roomName).catch((err) => {
-      console.error(err.toString());
-      });
-    }
+    // async function getPreviousAiMessages(){
+    //   studyHubConnection.current?.invoke("GetAiMessagesAsync", roomName).catch((err) => {
+    //   console.error(err.toString());
+    //   });
+    // }
 
-      studyHubConnection.current?.on("UserJoined", (userName, message) => {
+      studyHubConnection.current?.on("UserJoined", async (newUser) => {
         const userJoinedMessage: Message = {
-            userIdentifier: userName,
-            content: message
+            userIdentifier: newUser,
+            content: newUser + "has entered the chat"
         }
-
         setMessages(current => [...current, userJoinedMessage]);
       })
 
@@ -187,9 +186,9 @@ export default function JoinRoomPage(){
     
           <Card className="flex-1 flex flex-col overflow-hidden">
             <ScrollArea className="flex-1 p-4 space-y-4">
-              {messages.map((msg) => (
+              {messages.map((msg, idx) => (
                 <div
-                  key={msg.userIdentifier}
+                  key={idx}
                   className={`flex items-start space-x-2 ${
                     msg.userIdentifier === userName ? "justify-end" : ""
                   }`}
@@ -201,8 +200,8 @@ export default function JoinRoomPage(){
                   )}
     
                   <div
-                    className={`max-w-xs rounded-2xl px-4 py-2 text-sm shadow-md ${
-                      msg.userIdentifier === "username"
+                    className={`max-w-xs rounded-2xl px-4 py-2 text-sm shadow-md mb-2 ${
+                      msg.userIdentifier === userName
                         ? "bg-blue-600 text-white"
                         : "bg-gray-200 text-gray-900"
                     }`}
@@ -212,16 +211,16 @@ export default function JoinRoomPage(){
     
                   {msg.userIdentifier === userName && (
                     <Avatar>
-                      <AvatarFallback>Y</AvatarFallback>
+                      <AvatarFallback>{msg.userIdentifier[0]}</AvatarFallback>
                     </Avatar>
                   )}
                 </div>
               ))}
             </ScrollArea>
     
-            <CardContent className="p-4 border-t flex items-center space-x-2">
+            <CardContent className="p-4 border-t flex items-center space-x-2 mt-2">
             <form onSubmit={handleMessageSend}>
-              <Input placeholder="Type a message..." className="flex-1" />
+              <Input type="text" placeholder="Type a message..." className="flex-1" value={inputContent}onChange={(e) => setInputContent(e.target.value)}/>
               <Button type="submit">Send</Button>
               </form>
             </CardContent>
