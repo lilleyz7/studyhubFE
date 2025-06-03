@@ -24,16 +24,16 @@ export default function JoinRoomPage(){
     const router = useRouter();
 
     useEffect(() => {
-      
+        
         async function checkLoginState() {
           const authenticated = await CheckAuth();
           if (!authenticated) {
             router.push("/login");
           }
         }
+
       
-        checkLoginState();
-      
+        checkLoginState();      
         return () => {
           if (studyHubConnection.current) {
             studyHubConnection.current.stop().then(() => {
@@ -63,35 +63,30 @@ export default function JoinRoomPage(){
         
           });
 
-          hubConnection.on("ReceiveBulkAiMessages", (messages: string[]) => {
-          const messagesReceived: Message[] = [];
+        //   hubConnection.on("ReceiveBulkMessages", (messages: IncomingMessage[]) => {
+        //   const messagesReceived: Message[] = [];
 
-          messages.forEach(message => {
-            const incomingMessage: Message = {
-              userIdentifier: "OpenAi",
-              content: message,
-            };
-            messagesReceived.push(incomingMessage);
-          });
+        //   messages.forEach(message => {
+        //     console.log(message.Text);
+        //     console.log(message.UserName);
+        //     const incomingMessage: Message = {
+        //       userIdentifier: message.UserName,
+        //       content: message.Text,
+        //     };
+        //     messagesReceived.push(incomingMessage);
+        //   });
           
-          setMessages(currentMessages => [...currentMessages, ...messagesReceived]);
-        });
+        //   setMessages(currentMessages => [...currentMessages, ...messagesReceived]);
+        // });
 
           try {
             await hubConnection.start();
             studyHubConnection.current = hubConnection;
-            // await getPreviousAiMessages();
 
           } catch (err) {
             console.error("Connection failed:", err);
           }
-    }
-
-    // async function getPreviousAiMessages(){
-    //   studyHubConnection.current?.invoke("GetAiMessagesAsync", roomName).catch((err) => {
-    //   console.error(err.toString());
-    //   });
-    // }
+        }
 
       studyHubConnection.current?.on("UserJoined", async (newUser) => {
         const userJoinedMessage: Message = {
@@ -114,7 +109,7 @@ export default function JoinRoomPage(){
     const handleRoomJoin = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         await createConnection();
-        studyHubConnection.current?.invoke("JoinRoomAsync", userName, roomName).catch(function (err){
+        await studyHubConnection.current?.invoke("JoinRoomAsync", userName, roomName).catch(function (err){
             console.log(err.toString());
         })
         setHasEnteredRoom(true);
@@ -127,7 +122,7 @@ export default function JoinRoomPage(){
         const isAiMessage = checkForAI(inputContent)
 
         if(isAiMessage){
-          await studyHubConnection.current?.invoke("SendAiRequestAsync", roomName, userName, inputContent).catch(function (err) {
+          await studyHubConnection.current?.invoke("SendAiRequestAsync", roomName, inputContent).catch(function (err) {
             setInputContent("");
             return console.error(err.toString());
         })
@@ -155,14 +150,13 @@ export default function JoinRoomPage(){
                 id="roomName"
                 type="text"
                 placeholder="Room Name"
-                value={roomName}
                 onChange={(e) => setRoomName(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="roomName">Username</Label>
+              <Label htmlFor="userName">Username</Label>
               <Input
-                id="roomName"
+                id="userName"
                 type="text"
                 placeholder="Username"
                 value={userName}
@@ -182,10 +176,10 @@ export default function JoinRoomPage(){
     else{
         return (
           <div className="flex flex-col h-screen max-w-4xl mx-auto p-4">
-          <h1 className="text-2xl font-bold mb-4">Group Chat</h1>
+          <h1 className="text-2xl font-bold mb-4">{roomName}</h1>
     
           <Card className="flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1 p-4 space-y-4">
+            <ScrollArea className="flex-1 p-4 space-y-4 overflow-auto">
               {messages.map((msg, idx) => (
                 <div
                   key={idx}

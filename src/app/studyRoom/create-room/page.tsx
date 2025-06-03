@@ -27,10 +27,15 @@ export default function CreateRoomPage(){
         e.preventDefault();
         const res = await CreateRoom(roomName);
         if (res.error){
+          if(res.status == 409){
+            alert("Room name not available")
+            return;
+          }
           alert(res.error);
+          return;
         }
 
-        routeController.push("/");
+        routeController.push("/studyRoom/join-room");
     }
 
     return(

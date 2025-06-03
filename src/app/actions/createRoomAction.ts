@@ -10,7 +10,8 @@ export default async function CreateRoom(roomName: string){
 
     if (!accessToken){
         const errorResponse: TokenError = {
-            error: "invalid"
+            error: "invalid",
+            status: 600
         }
 
         return errorResponse
@@ -34,21 +35,24 @@ export default async function CreateRoom(roomName: string){
         const response = await fetch(createRoomEndPoint, options)
         if(!response.ok){
             const errorResponse: TokenError = {
-                error: await response.text()
+                error: await response.text(),
+                status: response.status
             }
 
             return errorResponse;
         }
 
         const errorResponse: TokenError = {
-            error: null
+            error: null,
+            status: response.status
         }
 
         return errorResponse
 
     } catch(e){
         const errorResponse: TokenError = {
-            error: e + ""
+            error: e + "",
+            status: 500
         }
 
         return errorResponse

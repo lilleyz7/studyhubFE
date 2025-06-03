@@ -19,6 +19,7 @@ export default function LoginPage() {
     const res = await Login(email, password);
     if (res.error){
       setError(res.error);
+      return;
     }
     router.push("/studyRoom/create-room");
   };
